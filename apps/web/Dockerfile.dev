@@ -1,0 +1,26 @@
+# Imagen de DESARROLLO para apps/web. No usar en producción:
+# corre el dev server de Vite y depende de un bind mount con el código
+# fuente (ver docker-compose.yml en la raíz del repo).
+# Node 22 porque el pnpm fijado en package.json (packageManager) lo requiere.
+FROM node:22-alpine
+
+RUN corepack enable
+
+WORKDIR /app
+
+# Copiamos primero los manifests del workspace completo (el lockfile es
+# único para todo el monorepo) para aprovechar la cache de capas.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+EXPOSE 5173
+
+# --host 0.0.0.0 para que el server sea accesible desde fuera del contenedor
+# (se invoca vite directo con `exec`: pnpm no reenvía bien flags de "--" hacia
+# el script "dev" cuando se combina con --filter).
+CMD ["pnpm", "--filter", "web", "exec", "vite", "--host", "0.0.0.0"]

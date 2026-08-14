@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Usuaria administradora (una sola por ahora).
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+}
+
+/// Sesión de login por cookie, persistida en DB (sin JWT).
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Foto publicada en la galería.
+model Photo {
+  id           String         @id @default(cuid())
+  caption      String?
+  camera       String?
+  film         String?
+  aperture     String?
+  shutterSpeed String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  variants     PhotoVariant[]
+}
+
+/// Variante de archivo generada al procesar una foto (thumbnail/medium/full en WebP).
+model PhotoVariant {
+  id      String           @id @default(cuid())
+  photoId String
+  photo   Photo            @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  kind    PhotoVariantKind
+  path    String
+  width   Int
+  height  Int
+  format  String           @default("webp")
+
+  @@unique([photoId, kind])
+}
+
+enum PhotoVariantKind {
+  THUMBNAIL
+  MEDIUM
+  FULL
+}

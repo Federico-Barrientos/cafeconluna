@@ -1,0 +1,31 @@
+:root {
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --radius-ui: 3px;
+}
+
+[data-theme="dark"] {
+  --color-bg: #16120f;
+  --color-bg-elevated: #201a15;
+  --color-bg-overlay: rgba(12, 10, 8, 0.96);
+  --color-text: #ede6dc;
+  --color-text-muted: #a89c8c;
+  --color-border: #382f27;
+  --color-accent: #c17a4d;
+  --color-accent-strong: #d99566;
+  --color-danger: #c1573f;
+}
+
+[data-theme="light"] {
+  --color-bg: #faf6f0;
+  --color-bg-elevated: #f1e9dd;
+  --color-bg-overlay: rgba(250, 246, 240, 0.97);
+  --color-text: #2a2420;
+  --color-text-muted: #6e6255;
+  --color-border: #ddd0bd;
+  --color-accent: #a3541f;
+  --color-accent-strong: #86420f;
+  --color-danger: #a3341f;
+}

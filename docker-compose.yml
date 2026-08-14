@@ -1,0 +1,88 @@
+# Entorno de DESARROLLO. No pensado para producción/deploy (eso queda
+# pospuesto para más adelante). `docker compose up` debería alcanzar para
+# levantar db + api + web con hot reload.
+#
+# Variables opcionales en ./.env (ver .env.example). Sin ese archivo, se
+# usan los valores por defecto de abajo, pensados para funcionar out-of-the-box.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cafeconluna}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cafeconluna}
+      POSTGRES_DB: ${POSTGRES_DB:-cafeconluna}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cafeconluna} -d ${POSTGRES_DB:-cafeconluna}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cafeconluna}:${POSTGRES_PASSWORD:-cafeconluna}@db:5432/${POSTGRES_DB:-cafeconluna}?schema=public
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-cafeconluna_session}
+      UPLOADS_DIR: ./uploads
+      PORT: "4000"
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+      NODE_ENV: development
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@cafeconluna.com}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+    ports:
+      - "4000:4000"
+    volumes:
+      # Código fuente completo del monorepo (hot reload).
+      - .:/app
+      # node_modules quedan en volúmenes propios para que el bind mount de
+      # arriba no los pise (se instalan una sola vez al buildear la imagen).
+      - api_node_modules_root:/app/node_modules
+      - api_node_modules_app:/app/apps/api/node_modules
+      # Uploads persistidos entre restarts del contenedor.
+      - api_uploads:/app/apps/api/uploads
+    # Al levantar: generar el cliente de Prisma, aplicar/crear migraciones,
+    # sembrar la usuaria admin (idempotente) y recién ahí arrancar en watch.
+    command: >
+      sh -c "
+        pnpm --filter api exec prisma generate &&
+        pnpm --filter api exec prisma migrate dev --name init &&
+        pnpm --filter api run prisma:seed &&
+        pnpm run dev:api
+      "
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:4000/graphql}
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - web_node_modules_root:/app/node_modules
+      - web_node_modules_app:/app/apps/web/node_modules
+    command: ["pnpm", "--filter", "web", "exec", "vite", "--host", "0.0.0.0"]
+
+volumes:
+  db_data:
+  api_uploads:
+  api_node_modules_root:
+  api_node_modules_app:
+  web_node_modules_root:
+  web_node_modules_app:
