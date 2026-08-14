@@ -45,7 +45,7 @@ Esta imagen y compose son solo de desarrollo (no aptos para producción/deploy).
 
 ## Desarrollo (manual, sin Docker)
 
-Requiere Node 20+ y pnpm.
+Requiere Node 22.13+ (lo pide `packageManager: pnpm@11.21.0` en `package.json`) y pnpm.
 
 ```bash
 pnpm install
