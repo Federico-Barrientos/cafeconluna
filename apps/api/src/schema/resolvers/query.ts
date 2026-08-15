@@ -11,8 +11,12 @@ builder.queryFields((t) => ({
 
   photos: t.field({
     type: [PhotoRef],
-    resolve: (_root, _args, ctx) =>
+    args: {
+      tag: t.arg.string(),
+    },
+    resolve: (_root, args, ctx) =>
       ctx.prisma.photo.findMany({
+        where: args.tag ? { tags: { has: args.tag } } : undefined,
         orderBy: { createdAt: "desc" },
         include: { variants: true },
       }),

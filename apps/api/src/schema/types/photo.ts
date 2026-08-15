@@ -35,6 +35,7 @@ PhotoRef.implement({
     film: t.exposeString("film", { nullable: true }),
     aperture: t.exposeString("aperture", { nullable: true }),
     shutterSpeed: t.exposeString("shutterSpeed", { nullable: true }),
+    tags: t.exposeStringList("tags"),
     createdAt: t.string({ resolve: (photo) => photo.createdAt.toISOString() }),
     variants: t.field({
       type: [PhotoVariantRef],

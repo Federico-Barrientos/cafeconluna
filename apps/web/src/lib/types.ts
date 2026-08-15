@@ -14,6 +14,7 @@ export interface Photo {
   film: string | null;
   aperture: string | null;
   shutterSpeed: string | null;
+  tags: string[];
   createdAt: string;
   variants: PhotoVariant[];
 }

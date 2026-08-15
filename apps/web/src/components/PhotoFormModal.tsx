@@ -1,5 +1,7 @@
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { useState, type Dispatch, type FormEvent, type KeyboardEvent, type SetStateAction } from "react";
 import type { PhotoMetadata } from "../lib/api";
+
+const SUGGESTED_TAGS = ["paisaje", "retrato", "costumbrismo", "animales", "luna"];
 
 interface PhotoFormModalProps {
   title: string;
@@ -24,6 +26,27 @@ export function PhotoFormModal({
   submitLabel,
   submittingLabel,
 }: PhotoFormModalProps) {
+  const [tagInput, setTagInput] = useState("");
+  const tags = metadata.tags ?? [];
+
+  function addTag(raw: string) {
+    const tag = raw.trim().toLowerCase();
+    if (!tag || tags.includes(tag)) return;
+    setMetadata((prev) => ({ ...prev, tags: [...(prev.tags ?? []), tag] }));
+  }
+
+  function removeTag(tag: string) {
+    setMetadata((prev) => ({ ...prev, tags: (prev.tags ?? []).filter((t) => t !== tag) }));
+  }
+
+  function handleTagInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      addTag(tagInput);
+      setTagInput("");
+    }
+  }
+
   return (
     <div
       className="upload-modal"
@@ -91,6 +114,51 @@ export function PhotoFormModal({
               setMetadata((prev) => ({ ...prev, shutterSpeed: e.target.value }))
             }
           />
+        </div>
+
+        <div className="field">
+          <label htmlFor="tags">Tags</label>
+          {tags.length > 0 && (
+            <div className="tag-chips">
+              {tags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="tag-chip tag-chip--removable"
+                  onClick={() => removeTag(tag)}
+                  aria-label={`Quitar tag ${tag}`}
+                >
+                  {tag} ×
+                </button>
+              ))}
+            </div>
+          )}
+          <input
+            id="tags"
+            type="text"
+            placeholder="Escribí un tag y presioná Enter o coma"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagInputKeyDown}
+            onBlur={() => {
+              if (tagInput.trim()) {
+                addTag(tagInput);
+                setTagInput("");
+              }
+            }}
+          />
+          <div className="tag-chips">
+            {SUGGESTED_TAGS.filter((tag) => !tags.includes(tag)).map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className="tag-chip"
+                onClick={() => addTag(tag)}
+              >
+                + {tag}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="upload-modal__actions">

@@ -18,6 +18,7 @@ const EMPTY_METADATA: PhotoMetadata = {
   film: "",
   aperture: "",
   shutterSpeed: "",
+  tags: [],
 };
 
 function metadataFromPhoto(photo: Photo): PhotoMetadata {
@@ -27,6 +28,7 @@ function metadataFromPhoto(photo: Photo): PhotoMetadata {
     film: photo.film ?? "",
     aperture: photo.aperture ?? "",
     shutterSpeed: photo.shutterSpeed ?? "",
+    tags: photo.tags,
   };
 }
 
@@ -42,6 +44,7 @@ export function Admin() {
   const [modal, setModal] = useState<Modal | null>(null);
   const [metadata, setMetadata] = useState<PhotoMetadata>(EMPTY_METADATA);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Photo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -78,8 +81,11 @@ export function Admin() {
     navigate("/login");
   }
 
-  async function handleDelete(id: string) {
+  async function handleDeleteConfirmed() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     setError(null);
+    setDeleteTarget(null);
     try {
       await deletePhoto(id);
       setPhotos((prev) => prev.filter((p) => p.id !== id));
@@ -203,7 +209,7 @@ export function Admin() {
                     <button
                       type="button"
                       className="btn-small btn-small--danger"
-                      onClick={() => handleDelete(photo.id)}
+                      onClick={() => setDeleteTarget(photo)}
                     >
                       Borrar
                     </button>
@@ -227,6 +233,42 @@ export function Admin() {
           submitLabel={modal.kind === "create" ? "Subir" : "Guardar"}
           submittingLabel={modal.kind === "create" ? "Subiendo…" : "Guardando…"}
         />
+      )}
+
+      {deleteTarget && (
+        <div
+          className="upload-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirmar borrado"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setDeleteTarget(null);
+          }}
+        >
+          <div className="upload-modal__card">
+            <h3>Borrar foto</h3>
+            <p>
+              ¿Borrar «{deleteTarget.caption || "esta foto"}»? No se puede
+              deshacer.
+            </p>
+            <div className="upload-modal__actions">
+              <button
+                type="button"
+                className="btn-small"
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary btn-primary--danger"
+                onClick={handleDeleteConfirmed}
+              >
+                Borrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

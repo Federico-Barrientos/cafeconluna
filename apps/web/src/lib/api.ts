@@ -79,6 +79,7 @@ const PHOTO_FIELDS = `
   film
   aperture
   shutterSpeed
+  tags
   createdAt
   variants {
     kind
@@ -137,13 +138,14 @@ export interface PhotosResult {
   photos: Photo[];
 }
 
-export function fetchPhotos(): Promise<Photo[]> {
+export function fetchPhotos(tag?: string | null): Promise<Photo[]> {
   return graphqlRequest<PhotosResult>(
-    `query Photos {
-      photos {
+    `query Photos($tag: String) {
+      photos(tag: $tag) {
         ${PHOTO_FIELDS}
       }
     }`,
+    { tag: tag ?? null },
   ).then((data) => data.photos.map(withAbsoluteVariantUrls));
 }
 
@@ -153,6 +155,7 @@ export interface PhotoMetadata {
   film?: string;
   aperture?: string;
   shutterSpeed?: string;
+  tags?: string[];
 }
 
 interface UploadPhotoResult {
@@ -171,6 +174,7 @@ export function uploadPhoto(
       $film: String
       $aperture: String
       $shutterSpeed: String
+      $tags: [String!]
     ) {
       uploadPhoto(
         file: $file
@@ -179,6 +183,7 @@ export function uploadPhoto(
         film: $film
         aperture: $aperture
         shutterSpeed: $shutterSpeed
+        tags: $tags
       ) {
         ${PHOTO_FIELDS}
       }

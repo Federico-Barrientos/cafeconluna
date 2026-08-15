@@ -21,6 +21,7 @@ const UpdatePhotoInput = builder.inputType("UpdatePhotoInput", {
     film: t.string(),
     aperture: t.string(),
     shutterSpeed: t.string(),
+    tags: t.stringList(),
   }),
 });
 
@@ -69,6 +70,7 @@ builder.mutationFields((t) => ({
       film: t.arg.string(),
       aperture: t.arg.string(),
       shutterSpeed: t.arg.string(),
+      tags: t.arg.stringList(),
     },
     resolve: async (_root, args, ctx) => {
       requireAdmin(ctx);
@@ -83,6 +85,7 @@ builder.mutationFields((t) => ({
           film: args.film ?? null,
           aperture: args.aperture ?? null,
           shutterSpeed: args.shutterSpeed ?? null,
+          tags: args.tags ?? [],
         },
       });
 
@@ -116,9 +119,10 @@ builder.mutationFields((t) => ({
     },
     resolve: (_root, args, ctx) => {
       requireAdmin(ctx);
+      const { tags, ...rest } = args.input;
       return ctx.prisma.photo.update({
         where: { id: String(args.id) },
-        data: { ...args.input },
+        data: { ...rest, tags: tags ?? undefined },
         include: { variants: true },
       });
     },
