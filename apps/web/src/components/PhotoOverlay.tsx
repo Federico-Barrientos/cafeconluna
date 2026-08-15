@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getVariant, type Photo } from "../lib/types";
 
 interface PhotoOverlayProps {
@@ -17,6 +17,7 @@ export function PhotoOverlay({
   const photo = photos[index];
   const hasPrev = index > 0;
   const hasNext = index < photos.length - 1;
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -28,69 +29,74 @@ export function PhotoOverlay({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [index, hasPrev, hasNext, onClose, onNavigate]);
 
+  useEffect(() => {
+    document.documentElement.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+    return () => {
+      document.documentElement.style.overflow = "";
+    };
+  }, []);
+
   if (!photo) return null;
 
   const variant = getVariant(photo, "FULL");
-  const metaItems: { label: string; value: string | null }[] = [
-    { label: "cámara", value: photo.camera },
-    { label: "rollo", value: photo.film },
-    { label: "apertura", value: photo.aperture },
-    { label: "velocidad", value: photo.shutterSpeed },
-  ];
+  const ratio = variant ? `${variant.width} / ${variant.height}` : undefined;
+  const rollData = [photo.camera, photo.film, photo.aperture, photo.shutterSpeed]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div className="photo-overlay" role="dialog" aria-modal="true">
-      <div className="photo-overlay__top">
-        <button
-          type="button"
-          className="photo-overlay__close"
-          onClick={onClose}
-          aria-label="Cerrar"
+    <div
+      className="photo-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Vista de detalle de la fotografía"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <button
+        type="button"
+        className="photo-overlay__nav photo-overlay__nav--prev"
+        onClick={() => onNavigate(index - 1)}
+        disabled={!hasPrev}
+        aria-label="Foto anterior"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        className="photo-overlay__nav photo-overlay__nav--next"
+        onClick={() => onNavigate(index + 1)}
+        disabled={!hasNext}
+        aria-label="Foto siguiente"
+      >
+        ›
+      </button>
+      <button
+        ref={closeButtonRef}
+        type="button"
+        className="photo-overlay__close"
+        onClick={onClose}
+        aria-label="Cerrar vista de detalle"
+      >
+        ×
+      </button>
+
+      <div className="photo-overlay__frame">
+        <div
+          className="photo-overlay__img"
+          style={{ "--ratio": ratio } as React.CSSProperties}
         >
-          ×
-        </button>
+          <img src={variant?.url} alt={photo.caption ?? ""} />
+        </div>
       </div>
 
-      <div className="photo-overlay__body">
-        <button
-          type="button"
-          className="photo-overlay__nav-btn"
-          onClick={() => onNavigate(index - 1)}
-          disabled={!hasPrev}
-          aria-label="Foto anterior"
-        >
-          ‹
-        </button>
-
-        <img
-          className="photo-overlay__image"
-          src={variant?.url}
-          alt={photo.caption ?? ""}
-        />
-
-        <button
-          type="button"
-          className="photo-overlay__nav-btn"
-          onClick={() => onNavigate(index + 1)}
-          disabled={!hasNext}
-          aria-label="Foto siguiente"
-        >
-          ›
-        </button>
-      </div>
-
-      {photo.caption && (
-        <p className="photo-overlay__caption">{photo.caption}</p>
-      )}
-
-      <div className="photo-overlay__meta">
-        {metaItems
-          .filter((item) => item.value)
-          .map((item) => (
-            <span key={item.label}>
-              {item.label}: <strong>{item.value}</strong>
-            </span>
-          ))}
+      <div className="photo-overlay__caption">
+        {photo.caption && (
+          <h2 className="photo-overlay__title">{photo.caption}</h2>
+        )}
+        {rollData && <p className="photo-overlay__data">{rollData}</p>}
       </div>
     </div>
   );

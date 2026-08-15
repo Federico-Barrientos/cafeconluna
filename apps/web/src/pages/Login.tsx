@@ -1,13 +1,24 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../lib/api";
+import { login, me } from "../lib/api";
 
 export function Login() {
   const navigate = useNavigate();
+  const [checkingSession, setCheckingSession] = useState(true);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    me().then((user) => {
+      if (user) {
+        navigate("/admin");
+        return;
+      }
+      setCheckingSession(false);
+    });
+  }, [navigate]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -21,6 +32,14 @@ export function Login() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="centered-page">
+        <p>Verificando sesión…</p>
+      </div>
+    );
   }
 
   return (

@@ -6,13 +6,15 @@ import { Admin } from "./pages/Admin";
 
 export function App() {
   return (
-    <>
-      <SiteHeader />
-      <Routes>
-        <Route path="/" element={<Gallery />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
-    </>
+    <div className="stage">
+      <div className="site-inner">
+        <SiteHeader />
+        <Routes>
+          <Route path="/" element={<Gallery />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<Admin />} />
+        </Routes>
+      </div>
+    </div>
   );
 }

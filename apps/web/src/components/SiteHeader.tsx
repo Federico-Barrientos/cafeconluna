@@ -6,11 +6,13 @@ export function SiteHeader() {
 
   return (
     <header className="site-header">
-      <h1 className="site-header__title">
+      <h1 className="wordmark">
         <Link to="/">cafeconluna</Link>
+        <small>diario visual en 35&nbsp;mm</small>
       </h1>
-      <nav className="site-header__nav">
-        <Link to="/admin">admin</Link>
+      <nav className="site-nav">
+        <Link to="/">Índice</Link>
+        <Link to="/admin">Admin</Link>
         <button
           type="button"
           className="theme-toggle"

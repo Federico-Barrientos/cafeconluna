@@ -1,7 +1,14 @@
 import { builder } from "../builder.js";
 import { PhotoRef } from "../types/photo.js";
+import { UserRef } from "../types/user.js";
 
 builder.queryFields((t) => ({
+  me: t.field({
+    type: UserRef,
+    nullable: true,
+    resolve: (_root, _args, ctx) => ctx.user,
+  }),
+
   photos: t.field({
     type: [PhotoRef],
     resolve: (_root, _args, ctx) =>

@@ -1,4 +1,19 @@
+import type { Photo } from "./types";
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/graphql";
+// Origen de la API (sin el /graphql) para resolver las URLs relativas
+// (/uploads/...) que devuelve el resolver de PhotoVariant.
+const API_ORIGIN = new URL(API_URL).origin;
+
+function withAbsoluteVariantUrls(photo: Photo): Photo {
+  return {
+    ...photo,
+    variants: photo.variants.map((variant) => ({
+      ...variant,
+      url: variant.url.startsWith("/") ? `${API_ORIGIN}${variant.url}` : variant.url,
+    })),
+  };
+}
 
 interface GraphQLResponse<T> {
   data: T | null;
@@ -26,6 +41,53 @@ async function graphqlRequest<T>(
   return json.data;
 }
 
+/**
+ * Request GraphQL multipart (spec de graphql-multipart-request-spec) para
+ * mutations que reciben un `Upload`. Yoga espera los campos `operations`,
+ * `map` y un campo por archivo indexado numéricamente.
+ */
+async function graphqlUploadRequest<T>(
+  query: string,
+  variables: Record<string, unknown>,
+  file: File,
+): Promise<T> {
+  const form = new FormData();
+  form.append("operations", JSON.stringify({ query, variables }));
+  form.append("map", JSON.stringify({ "0": ["variables.file"] }));
+  form.append("0", file);
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    credentials: "include",
+    body: form,
+  });
+
+  const json = (await res.json()) as GraphQLResponse<T>;
+  if (json.errors?.length) {
+    throw new Error(json.errors[0].message);
+  }
+  if (!json.data) {
+    throw new Error("Respuesta vacía del servidor");
+  }
+  return json.data;
+}
+
+const PHOTO_FIELDS = `
+  id
+  caption
+  camera
+  film
+  aperture
+  shutterSpeed
+  createdAt
+  variants {
+    kind
+    url
+    width
+    height
+  }
+`;
+
 export interface LoginResult {
   login: { id: string; username: string; email: string };
 }
@@ -41,4 +103,118 @@ export function login(username: string, password: string): Promise<LoginResult> 
     }`,
     { username, password },
   );
+}
+
+export interface MeResult {
+  me: { id: string; username: string; email: string } | null;
+}
+
+export function me(): Promise<MeResult["me"]> {
+  return graphqlRequest<MeResult>(
+    `query Me {
+      me {
+        id
+        username
+        email
+      }
+    }`,
+  ).then((data) => data.me);
+}
+
+export interface LogoutResult {
+  logout: boolean;
+}
+
+export function logout(): Promise<boolean> {
+  return graphqlRequest<LogoutResult>(
+    `mutation Logout {
+      logout
+    }`,
+  ).then((data) => data.logout);
+}
+
+export interface PhotosResult {
+  photos: Photo[];
+}
+
+export function fetchPhotos(): Promise<Photo[]> {
+  return graphqlRequest<PhotosResult>(
+    `query Photos {
+      photos {
+        ${PHOTO_FIELDS}
+      }
+    }`,
+  ).then((data) => data.photos.map(withAbsoluteVariantUrls));
+}
+
+export interface PhotoMetadata {
+  caption?: string;
+  camera?: string;
+  film?: string;
+  aperture?: string;
+  shutterSpeed?: string;
+}
+
+interface UploadPhotoResult {
+  uploadPhoto: Photo;
+}
+
+export function uploadPhoto(
+  file: File,
+  metadata: PhotoMetadata,
+): Promise<Photo> {
+  return graphqlUploadRequest<UploadPhotoResult>(
+    `mutation UploadPhoto(
+      $file: Upload!
+      $caption: String
+      $camera: String
+      $film: String
+      $aperture: String
+      $shutterSpeed: String
+    ) {
+      uploadPhoto(
+        file: $file
+        caption: $caption
+        camera: $camera
+        film: $film
+        aperture: $aperture
+        shutterSpeed: $shutterSpeed
+      ) {
+        ${PHOTO_FIELDS}
+      }
+    }`,
+    { file: null, ...metadata },
+    file,
+  ).then((data) => withAbsoluteVariantUrls(data.uploadPhoto));
+}
+
+interface UpdatePhotoResult {
+  updatePhoto: Photo;
+}
+
+export function updatePhoto(
+  id: string,
+  input: PhotoMetadata,
+): Promise<Photo> {
+  return graphqlRequest<UpdatePhotoResult>(
+    `mutation UpdatePhoto($id: ID!, $input: UpdatePhotoInput!) {
+      updatePhoto(id: $id, input: $input) {
+        ${PHOTO_FIELDS}
+      }
+    }`,
+    { id, input },
+  ).then((data) => withAbsoluteVariantUrls(data.updatePhoto));
+}
+
+interface DeletePhotoResult {
+  deletePhoto: boolean;
+}
+
+export function deletePhoto(id: string): Promise<boolean> {
+  return graphqlRequest<DeletePhotoResult>(
+    `mutation DeletePhoto($id: ID!) {
+      deletePhoto(id: $id)
+    }`,
+    { id },
+  ).then((data) => data.deletePhoto);
 }

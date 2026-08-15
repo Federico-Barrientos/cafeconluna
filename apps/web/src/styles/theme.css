@@ -1,31 +1,52 @@
 :root {
-  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
 
-  --radius-ui: 3px;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-sans: Seravek, "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --radius-ui: 2px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2.25rem;
+  --space-7: 3.5rem;
+  --space-8: 5rem;
+
+  --grain: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0"/></filter><rect width="140" height="140" filter="url(%23n)"/></svg>');
 }
 
 [data-theme="dark"] {
-  --color-bg: #16120f;
-  --color-bg-elevated: #201a15;
-  --color-bg-overlay: rgba(12, 10, 8, 0.96);
-  --color-text: #ede6dc;
-  --color-text-muted: #a89c8c;
-  --color-border: #382f27;
-  --color-accent: #c17a4d;
-  --color-accent-strong: #d99566;
+  color-scheme: dark;
+  --color-bg: #1c1410;
+  --color-backdrop: #100b08;
+  --color-bg-elevated: #251b15;
+  --color-surface-2: #2e2119;
+  --color-bg-overlay: rgba(12, 8, 6, 0.72);
+  --color-text: #f1e6d8;
+  --color-text-muted: #b6a290;
+  --color-border: rgba(241, 230, 216, 0.14);
+  --color-accent: #d98a52;
+  --color-accent-strong: #e8b25f;
+  --color-accent-dusk: #7f92ad;
   --color-danger: #c1573f;
 }
 
 [data-theme="light"] {
-  --color-bg: #faf6f0;
-  --color-bg-elevated: #f1e9dd;
-  --color-bg-overlay: rgba(250, 246, 240, 0.97);
-  --color-text: #2a2420;
-  --color-text-muted: #6e6255;
-  --color-border: #ddd0bd;
-  --color-accent: #a3541f;
-  --color-accent-strong: #86420f;
+  color-scheme: light;
+  --color-bg: #e7e0d2;
+  --color-backdrop: #d3c6ae;
+  --color-bg-elevated: #ddd2bd;
+  --color-surface-2: #d2c5ac;
+  --color-bg-overlay: rgba(231, 224, 210, 0.85);
+  --color-text: #2a211a;
+  --color-text-muted: #6b5c4d;
+  --color-border: rgba(42, 33, 26, 0.16);
+  --color-accent: #9c5628;
+  --color-accent-strong: #7c451f;
+  --color-accent-dusk: #4a5a72;
   --color-danger: #a3341f;
 }

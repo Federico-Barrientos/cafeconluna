@@ -14,21 +14,32 @@ export function Masonry({ photos, onSelect }: MasonryProps) {
     <div className="masonry">
       {photos.map((photo, index) => {
         const variant = getVariant(photo, "MEDIUM");
+        const ratio = variant ? `${variant.width} / ${variant.height}` : undefined;
         return (
-          <figure
+          <button
             key={photo.id}
+            type="button"
             className="masonry__item"
             onClick={() => onSelect(index)}
+            aria-label={`Ver detalle: ${photo.caption ?? "foto"}`}
           >
-            <img
-              className="masonry__img"
-              src={variant?.url}
-              alt={photo.caption ?? ""}
-              width={variant?.width}
-              height={variant?.height}
-              loading="lazy"
-            />
-          </figure>
+            <span
+              className="masonry__frame"
+              style={{ "--ratio": ratio } as React.CSSProperties}
+            >
+              <img
+                className="masonry__img"
+                src={variant?.url}
+                alt={photo.caption ?? ""}
+                width={variant?.width}
+                height={variant?.height}
+                loading="lazy"
+              />
+            </span>
+            {photo.caption && (
+              <span className="masonry__caption">{photo.caption}</span>
+            )}
+          </button>
         );
       })}
     </div>

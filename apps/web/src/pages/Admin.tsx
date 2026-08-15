@@ -1,39 +1,93 @@
-import { useRef, useState } from "react";
-import { mockPhotos } from "../lib/mockPhotos";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { deletePhoto, fetchPhotos, logout, me, updatePhoto, uploadPhoto } from "../lib/api";
 import { getVariant, type Photo } from "../lib/types";
 
-// TODO: reemplazar el estado local por las mutaciones uploadPhoto /
-// updatePhoto / deletePhoto de la API cuando esté levantada.
 export function Admin() {
-  const [photos, setPhotos] = useState<Photo[]>(mockPhotos);
+  const navigate = useNavigate();
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleDelete(id: string) {
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
+  useEffect(() => {
+    me().then((user) => {
+      if (!user) {
+        navigate("/login");
+        return;
+      }
+      setCheckingSession(false);
+    });
+  }, [navigate]);
+
+  useEffect(() => {
+    if (checkingSession) return;
+    fetchPhotos()
+      .then(setPhotos)
+      .catch((err) => setError(err instanceof Error ? err.message : "No se pudieron cargar las fotos"))
+      .finally(() => setLoading(false));
+  }, [checkingSession]);
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login");
   }
 
-  function handleEdit(id: string) {
+  async function handleDelete(id: string) {
+    setError(null);
+    try {
+      await deletePhoto(id);
+      setPhotos((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo borrar la foto");
+    }
+  }
+
+  async function handleEdit(id: string) {
     const current = photos.find((p) => p.id === id);
     const next = window.prompt("Nuevo pie de foto", current?.caption ?? "");
     if (next === null) return;
-    setPhotos((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, caption: next } : p)),
-    );
+    setError(null);
+    try {
+      const updated = await updatePhoto(id, { caption: next });
+      setPhotos((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo editar la foto");
+    }
   }
 
-  function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
-    // TODO: mandar `file` a la mutation uploadPhoto (multipart).
-    console.log("Foto seleccionada para subir:", file.name);
     event.target.value = "";
+    if (!file) return;
+
+    setError(null);
+    setUploading(true);
+    try {
+      const photo = await uploadPhoto(file, {});
+      setPhotos((prev) => [photo, ...prev]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo subir la foto");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  if (checkingSession) {
+    return (
+      <main className="admin-page">
+        <p>Verificando sesión…</p>
+      </main>
+    );
   }
 
   return (
     <main className="admin-page">
       <div className="admin-page__toolbar">
         <h2>Fotos ({photos.length})</h2>
-        <div>
+        <div className="admin-page__toolbar-actions">
           <input
             ref={fileInputRef}
             type="file"
@@ -44,48 +98,58 @@ export function Admin() {
           <button
             type="button"
             className="btn-primary"
+            disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
           >
-            Subir foto
+            {uploading ? "Subiendo…" : "Subir foto"}
+          </button>
+          <button type="button" className="btn-small" onClick={handleLogout}>
+            Cerrar sesión
           </button>
         </div>
       </div>
 
-      <div className="admin-grid">
-        {photos.map((photo) => {
-          const variant = getVariant(photo, "THUMBNAIL");
-          return (
-            <div key={photo.id} className="admin-card">
-              <img
-                className="admin-card__img"
-                src={variant?.url}
-                alt={photo.caption ?? ""}
-              />
-              <div className="admin-card__body">
-                <p className="admin-card__caption">
-                  {photo.caption || "Sin pie de foto"}
-                </p>
-                <div className="admin-card__actions">
-                  <button
-                    type="button"
-                    className="btn-small"
-                    onClick={() => handleEdit(photo.id)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-small btn-small--danger"
-                    onClick={() => handleDelete(photo.id)}
-                  >
-                    Borrar
-                  </button>
+      {error && <p className="form-error">{error}</p>}
+
+      {loading ? (
+        <p>Cargando…</p>
+      ) : (
+        <div className="admin-grid">
+          {photos.map((photo) => {
+            const variant = getVariant(photo, "THUMBNAIL");
+            return (
+              <div key={photo.id} className="admin-card">
+                <img
+                  className="admin-card__img"
+                  src={variant?.url}
+                  alt={photo.caption ?? ""}
+                />
+                <div className="admin-card__body">
+                  <p className="admin-card__caption">
+                    {photo.caption || "Sin pie de foto"}
+                  </p>
+                  <div className="admin-card__actions">
+                    <button
+                      type="button"
+                      className="btn-small"
+                      onClick={() => handleEdit(photo.id)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-small btn-small--danger"
+                      onClick={() => handleDelete(photo.id)}
+                    >
+                      Borrar
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </main>
   );
 }

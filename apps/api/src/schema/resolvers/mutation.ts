@@ -4,6 +4,7 @@ import { generatePhotoVariants } from "../../lib/images.js";
 import {
   createSession,
   requireAdmin,
+  serializeExpiredSessionCookie,
   serializeSessionCookie,
   verifyPassword,
 } from "../../lib/auth.js";
@@ -45,6 +46,17 @@ builder.mutationFields((t) => ({
       ctx.responseCookies.push(serializeSessionCookie(session.id));
 
       return user;
+    },
+  }),
+
+  logout: t.field({
+    type: "Boolean",
+    resolve: async (_root, _args, ctx) => {
+      if (ctx.sessionId) {
+        await ctx.prisma.session.delete({ where: { id: ctx.sessionId } });
+      }
+      ctx.responseCookies.push(serializeExpiredSessionCookie());
+      return true;
     },
   }),
 
