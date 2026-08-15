@@ -40,7 +40,7 @@ export function serializeSessionCookie(sessionId: string): string {
     value: sessionId,
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: "strict",
+    sameSite: env.cookieSameSite,
     path: "/",
     maxAge: SESSION_TTL_MS / 1000,
   });
@@ -52,7 +52,7 @@ export function serializeExpiredSessionCookie(): string {
     value: "",
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: "strict",
+    sameSite: env.cookieSameSite,
     path: "/",
     maxAge: 0,
   });

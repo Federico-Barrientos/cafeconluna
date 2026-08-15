@@ -1,0 +1,3 @@
+# Forzar LF en scripts que corren dentro de contenedores Linux (Railway build),
+# independientemente del core.autocrlf configurado en Windows.
+*.sh text eol=lf
