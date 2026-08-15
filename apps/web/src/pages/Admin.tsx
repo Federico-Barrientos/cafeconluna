@@ -4,11 +4,12 @@ import {
   deletePhoto,
   fetchPhotos,
   logout,
-  me,
   updatePhoto,
   uploadPhoto,
   type PhotoMetadata,
 } from "../lib/api";
+import { useAuth } from "../lib/auth";
+import { PhotoFormModal } from "../components/PhotoFormModal";
 import { getVariant, type Photo } from "../lib/types";
 
 const EMPTY_METADATA: PhotoMetadata = {
@@ -19,37 +20,61 @@ const EMPTY_METADATA: PhotoMetadata = {
   shutterSpeed: "",
 };
 
+function metadataFromPhoto(photo: Photo): PhotoMetadata {
+  return {
+    caption: photo.caption ?? "",
+    camera: photo.camera ?? "",
+    film: photo.film ?? "",
+    aperture: photo.aperture ?? "",
+    shutterSpeed: photo.shutterSpeed ?? "",
+  };
+}
+
+type Modal = { kind: "create"; file: File } | { kind: "edit"; photo: Photo };
+
 export function Admin() {
   const navigate = useNavigate();
-  const [checkingSession, setCheckingSession] = useState(true);
+  const { user, loading: checkingSession, refresh } = useAuth();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [modal, setModal] = useState<Modal | null>(null);
   const [metadata, setMetadata] = useState<PhotoMetadata>(EMPTY_METADATA);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    me().then((user) => {
-      if (!user) {
-        navigate("/login");
-        return;
-      }
-      setCheckingSession(false);
-    });
-  }, [navigate]);
+    if (!checkingSession && !user) {
+      navigate("/login");
+    }
+  }, [checkingSession, user, navigate]);
 
   useEffect(() => {
-    if (checkingSession) return;
+    if (checkingSession || !user) return;
     fetchPhotos()
       .then(setPhotos)
       .catch((err) => setError(err instanceof Error ? err.message : "No se pudieron cargar las fotos"))
       .finally(() => setLoading(false));
-  }, [checkingSession]);
+  }, [checkingSession, user]);
+
+  useEffect(() => {
+    if (!modal) {
+      setPreviewUrl(null);
+      return;
+    }
+    if (modal.kind === "create") {
+      const url = URL.createObjectURL(modal.file);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    const variant = getVariant(modal.photo, "MEDIUM");
+    setPreviewUrl(variant?.url ?? null);
+  }, [modal]);
 
   async function handleLogout() {
     await logout();
+    await refresh();
     navigate("/login");
   }
 
@@ -63,17 +88,12 @@ export function Admin() {
     }
   }
 
-  async function handleEdit(id: string) {
-    const current = photos.find((p) => p.id === id);
-    const next = window.prompt("Nuevo pie de foto", current?.caption ?? "");
-    if (next === null) return;
+  function handleEdit(id: string) {
+    const photo = photos.find((p) => p.id === id);
+    if (!photo) return;
     setError(null);
-    try {
-      const updated = await updatePhoto(id, { caption: next });
-      setPhotos((prev) => prev.map((p) => (p.id === id ? updated : p)));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo editar la foto");
-    }
+    setMetadata(metadataFromPhoto(photo));
+    setModal({ kind: "edit", photo });
   }
 
   function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
@@ -83,33 +103,39 @@ export function Admin() {
 
     setError(null);
     setMetadata(EMPTY_METADATA);
-    setPendingFile(file);
+    setModal({ kind: "create", file });
   }
 
-  function handleUploadCancel() {
-    setPendingFile(null);
+  function handleModalCancel() {
+    setModal(null);
     setMetadata(EMPTY_METADATA);
   }
 
-  async function handleUploadConfirm(event: FormEvent) {
+  async function handleModalSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!pendingFile) return;
+    if (!modal) return;
 
     setError(null);
-    setUploading(true);
+    setSubmitting(true);
     try {
-      const photo = await uploadPhoto(pendingFile, metadata);
-      setPhotos((prev) => [photo, ...prev]);
-      setPendingFile(null);
+      if (modal.kind === "create") {
+        const photo = await uploadPhoto(modal.file, metadata);
+        setPhotos((prev) => [photo, ...prev]);
+      } else {
+        const updated = await updatePhoto(modal.photo.id, metadata);
+        setPhotos((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      }
+      setModal(null);
       setMetadata(EMPTY_METADATA);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo subir la foto");
+      const fallback = modal.kind === "create" ? "No se pudo subir la foto" : "No se pudo editar la foto";
+      setError(err instanceof Error ? err.message : fallback);
     } finally {
-      setUploading(false);
+      setSubmitting(false);
     }
   }
 
-  if (checkingSession) {
+  if (checkingSession || !user) {
     return (
       <main className="admin-page">
         <p>Verificando sesión…</p>
@@ -132,10 +158,10 @@ export function Admin() {
           <button
             type="button"
             className="btn-primary"
-            disabled={uploading}
+            disabled={submitting}
             onClick={() => fileInputRef.current?.click()}
           >
-            {uploading ? "Subiendo…" : "Subir foto"}
+            {submitting ? "Subiendo…" : "Subir foto"}
           </button>
           <button type="button" className="btn-small" onClick={handleLogout}>
             Cerrar sesión
@@ -189,81 +215,18 @@ export function Admin() {
         </div>
       )}
 
-      {pendingFile && (
-        <div
-          className="upload-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Datos de la fotografía"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) handleUploadCancel();
-          }}
-        >
-          <form className="upload-modal__card" onSubmit={handleUploadConfirm}>
-            <h3>{pendingFile.name}</h3>
-
-            <div className="field">
-              <label htmlFor="caption">Pie de foto</label>
-              <input
-                id="caption"
-                type="text"
-                value={metadata.caption}
-                onChange={(e) => setMetadata((prev) => ({ ...prev, caption: e.target.value }))}
-              />
-            </div>
-
-            <div className="field">
-              <label htmlFor="camera">Cámara</label>
-              <input
-                id="camera"
-                type="text"
-                value={metadata.camera}
-                onChange={(e) => setMetadata((prev) => ({ ...prev, camera: e.target.value }))}
-              />
-            </div>
-
-            <div className="field">
-              <label htmlFor="film">Rollo</label>
-              <input
-                id="film"
-                type="text"
-                value={metadata.film}
-                onChange={(e) => setMetadata((prev) => ({ ...prev, film: e.target.value }))}
-              />
-            </div>
-
-            <div className="field">
-              <label htmlFor="aperture">Apertura</label>
-              <input
-                id="aperture"
-                type="text"
-                value={metadata.aperture}
-                onChange={(e) => setMetadata((prev) => ({ ...prev, aperture: e.target.value }))}
-              />
-            </div>
-
-            <div className="field">
-              <label htmlFor="shutterSpeed">Velocidad de obturación</label>
-              <input
-                id="shutterSpeed"
-                type="text"
-                value={metadata.shutterSpeed}
-                onChange={(e) =>
-                  setMetadata((prev) => ({ ...prev, shutterSpeed: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="upload-modal__actions">
-              <button type="button" className="btn-small" onClick={handleUploadCancel}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn-primary" disabled={uploading}>
-                {uploading ? "Subiendo…" : "Subir"}
-              </button>
-            </div>
-          </form>
-        </div>
+      {modal && (
+        <PhotoFormModal
+          title={modal.kind === "create" ? modal.file.name : "Editar foto"}
+          previewUrl={previewUrl}
+          metadata={metadata}
+          setMetadata={setMetadata}
+          onCancel={handleModalCancel}
+          onSubmit={handleModalSubmit}
+          submitting={submitting}
+          submitLabel={modal.kind === "create" ? "Subir" : "Guardar"}
+          submittingLabel={modal.kind === "create" ? "Subiendo…" : "Guardando…"}
+        />
       )}
     </main>
   );

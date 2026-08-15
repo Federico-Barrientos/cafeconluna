@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../lib/auth";
 import { useTheme } from "../lib/theme";
 
 export function SiteHeader() {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
 
   return (
     <header className="site-header">
@@ -12,7 +14,7 @@ export function SiteHeader() {
       </h1>
       <nav className="site-nav">
         <Link to="/">Índice</Link>
-        <Link to="/admin">Admin</Link>
+        {user && <Link to="/admin">Admin</Link>}
         <button
           type="button"
           className="theme-toggle"

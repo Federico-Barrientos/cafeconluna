@@ -567,6 +567,15 @@ button {
   word-break: break-all;
 }
 
+.upload-modal__preview {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  margin-bottom: 1rem;
+}
+
 .upload-modal__actions {
   display: flex;
   justify-content: flex-end;

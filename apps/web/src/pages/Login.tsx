@@ -1,24 +1,21 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, me } from "../lib/api";
+import { login } from "../lib/api";
+import { useAuth } from "../lib/auth";
 
 export function Login() {
   const navigate = useNavigate();
-  const [checkingSession, setCheckingSession] = useState(true);
+  const { user, loading: checkingSession, refresh } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    me().then((user) => {
-      if (user) {
-        navigate("/admin");
-        return;
-      }
-      setCheckingSession(false);
-    });
-  }, [navigate]);
+    if (!checkingSession && user) {
+      navigate("/admin");
+    }
+  }, [checkingSession, user, navigate]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -26,6 +23,7 @@ export function Login() {
     setLoading(true);
     try {
       await login(username, password);
+      await refresh();
       navigate("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
@@ -34,7 +32,7 @@ export function Login() {
     }
   }
 
-  if (checkingSession) {
+  if (checkingSession || user) {
     return (
       <div className="centered-page">
         <p>Verificando sesión…</p>
