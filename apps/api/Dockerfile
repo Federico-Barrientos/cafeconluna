@@ -1,8 +1,12 @@
-# Imagen de PRODUCCIÓN para apps/api (Railway). Multi-stage:
+# Imagen de PRODUCCIÓN (Railway) que sirve api + web desde el mismo proceso
+# Node (mismo origen, sin CORS ni cookie cross-site). Multi-stage:
 #   1. "builder": instala TODAS las deps (incluye devDependencies), genera
 #      el cliente de Prisma y compila TypeScript a dist/.
-#   2. "runtime": imagen liviana con solo las dependencias de producción
-#      y el código ya compilado. No usa bind mounts ni `tsx watch`.
+#   1b. "web-builder": compila apps/web (Vite) a estático, para copiarlo
+#      al stage de runtime junto al server de la API.
+#   2. "runtime": imagen liviana con solo las dependencias de producción,
+#      el código de la API ya compilado y el build estático de apps/web.
+#      No usa bind mounts ni `tsx watch`.
 #
 # Se construye con el CONTEXTO EN LA RAÍZ DEL MONOREPO (no en apps/api),
 # porque el lockfile es único para todo el workspace:
@@ -42,6 +46,23 @@ COPY apps/api ./apps/api
 
 RUN pnpm --filter api exec prisma generate
 RUN pnpm --filter api run build
+
+# ---------- Stage 1b: web-builder ----------
+# Compila el front (apps/web) para servirlo estático desde el mismo proceso
+# Node de la API (mismo origen en Railway, sin CORS ni cookie cross-site).
+# Parte de "builder" para reusar node_modules ya instalados (pnpm install
+# corrió sobre todo el workspace, así que las deps de "web" ya están ahí).
+FROM builder AS web-builder
+
+# Vite "hornea" VITE_API_URL en el bundle en tiempo de build. Default a
+# "/graphql" (ruta relativa): en producción consolidada front y api viven
+# en el mismo origen, así que no hace falta una URL absoluta. Se puede
+# pisar con --build-arg VITE_API_URL=... si hiciera falta otro esquema.
+ARG VITE_API_URL=/graphql
+ENV VITE_API_URL=${VITE_API_URL}
+
+COPY apps/web ./apps/web
+RUN pnpm --filter web run build
 
 # ---------- Stage 2: runtime ----------
 FROM node:22-bookworm-slim AS runtime
@@ -85,6 +106,10 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY apps/api/src ./apps/api/src
 COPY apps/api/docker-entrypoint.sh ./apps/api/docker-entrypoint.sh
 RUN chmod +x ./apps/api/docker-entrypoint.sh
+
+# Build estático del front, servido por el mismo proceso Node (ver
+# apps/api/src/index.ts: fallback de archivos + SPA routing).
+COPY --from=web-builder /app/apps/web/dist ./apps/web/dist
 
 EXPOSE 4000
 

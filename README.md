@@ -45,17 +45,20 @@ Esta imagen y compose son solo de desarrollo (no aptos para producción/deploy).
 
 ## Producción / deploy
 
-Deploy pensado: `api` + Postgres + volumen persistente en Railway, `web`
-(estático) en Cloudflare Pages.
+Deploy pensado: un único servicio en Railway (con Postgres y un volumen
+persistente) que corre `api`, y ese mismo proceso Node sirve también el
+build estático de `web` (mismo origen, sin CORS ni cookie cross-site).
 
 - `apps/api/Dockerfile` — imagen de producción (multi-stage, sin bind
-  mounts ni `tsx watch`; corre `prisma migrate deploy` + seed idempotente
-  del admin al arrancar, y `node dist/index.js`). No confundir con
-  `apps/api/Dockerfile.dev`, que sigue siendo la imagen de desarrollo.
+  mounts ni `tsx watch`): compila la API y, en un stage aparte, compila
+  `apps/web` con Vite y copia su `dist/` al lado del server. Al arrancar
+  corre `prisma migrate deploy` + seed idempotente del admin y levanta
+  `node dist/index.js`, que sirve `/graphql`, `/uploads/*` y el estático de
+  `web` (con fallback a `index.html` para las rutas de react-router). No
+  confundir con `apps/api/Dockerfile.dev`, que sigue siendo la imagen de
+  desarrollo (esa no cambió).
 - `apps/api/.env.production.example` — qué variables cargar en el
   dashboard de Railway.
-- `apps/web/.env.example` — nota sobre `VITE_API_URL` como build-time env
-  var en Cloudflare Pages.
 
 ## Desarrollo (manual, sin Docker)
 

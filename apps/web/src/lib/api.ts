@@ -2,8 +2,13 @@ import type { Photo } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/graphql";
 // Origen de la API (sin el /graphql) para resolver las URLs relativas
-// (/uploads/...) que devuelve el resolver de PhotoVariant.
-const API_ORIGIN = new URL(API_URL).origin;
+// (/uploads/...) que devuelve el resolver de PhotoVariant. Si VITE_API_URL
+// es una ruta relativa (producción consolidada: front y api en el mismo
+// origen/proceso), no hay una URL absoluta de la que derivar el origen, así
+// que usamos el del propio browser. En desarrollo (VITE_API_URL absoluta,
+// apuntando a :4000 mientras el front corre en :5173) se sigue derivando
+// del URL de la API, como antes.
+const API_ORIGIN = API_URL.startsWith("/") ? window.location.origin : new URL(API_URL).origin;
 
 function withAbsoluteVariantUrls(photo: Photo): Photo {
   return {
