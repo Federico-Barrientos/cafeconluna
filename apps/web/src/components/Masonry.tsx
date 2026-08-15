@@ -38,11 +38,13 @@ export function Masonry({ photos, onSelect }: MasonryProps) {
             </span>
             {(photo.tags.length > 0 || photo.caption) && (
               <span className="masonry__meta">
+                <div>
                 {photo.tags.map((tag) => (
                   <span key={tag} className="masonry__tag">
-                    {tag}
+                    {tag} {photo.tags.length > 1 && "· "}
                   </span>
                 ))}
+                </div>
                 {photo.caption && (
                   <span className="masonry__caption">{photo.caption}</span>
                 )}
