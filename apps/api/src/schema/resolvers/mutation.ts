@@ -17,6 +17,7 @@ import "../types/upload.js";
 const UpdatePhotoInput = builder.inputType("UpdatePhotoInput", {
   fields: (t) => ({
     caption: t.string(),
+    description: t.string(),
     camera: t.string(),
     film: t.string(),
     aperture: t.string(),
@@ -66,6 +67,7 @@ builder.mutationFields((t) => ({
     args: {
       file: t.arg({ type: "Upload", required: true }),
       caption: t.arg.string(),
+      description: t.arg.string(),
       camera: t.arg.string(),
       film: t.arg.string(),
       aperture: t.arg.string(),
@@ -81,6 +83,7 @@ builder.mutationFields((t) => ({
       const photo = await ctx.prisma.photo.create({
         data: {
           caption: args.caption ?? null,
+          description: args.description ?? null,
           camera: args.camera ?? null,
           film: args.film ?? null,
           aperture: args.aperture ?? null,

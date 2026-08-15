@@ -75,6 +75,7 @@ async function graphqlUploadRequest<T>(
 const PHOTO_FIELDS = `
   id
   caption
+  description
   camera
   film
   aperture
@@ -151,6 +152,7 @@ export function fetchPhotos(tag?: string | null): Promise<Photo[]> {
 
 export interface PhotoMetadata {
   caption?: string;
+  description?: string;
   camera?: string;
   film?: string;
   aperture?: string;
@@ -170,6 +172,7 @@ export function uploadPhoto(
     `mutation UploadPhoto(
       $file: Upload!
       $caption: String
+      $description: String
       $camera: String
       $film: String
       $aperture: String
@@ -179,6 +182,7 @@ export function uploadPhoto(
       uploadPhoto(
         file: $file
         caption: $caption
+        description: $description
         camera: $camera
         film: $film
         aperture: $aperture

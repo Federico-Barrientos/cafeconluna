@@ -15,19 +15,19 @@ export function PhotoOverlay({
   onNavigate,
 }: PhotoOverlayProps) {
   const photo = photos[index];
-  const hasPrev = index > 0;
-  const hasNext = index < photos.length - 1;
+  const prevIndex = (index - 1 + photos.length) % photos.length;
+  const nextIndex = (index + 1) % photos.length;
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
-      if (event.key === "ArrowLeft" && hasPrev) onNavigate(index - 1);
-      if (event.key === "ArrowRight" && hasNext) onNavigate(index + 1);
+      if (event.key === "ArrowLeft") onNavigate(prevIndex);
+      if (event.key === "ArrowRight") onNavigate(nextIndex);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [index, hasPrev, hasNext, onClose, onNavigate]);
+  }, [prevIndex, nextIndex, onClose, onNavigate]);
 
   useEffect(() => {
     document.documentElement.style.overflow = "hidden";
@@ -41,7 +41,12 @@ export function PhotoOverlay({
 
   const variant = getVariant(photo, "FULL");
   const ratio = variant ? `${variant.width} / ${variant.height}` : undefined;
-  const rollData = [photo.camera, photo.film, photo.aperture, photo.shutterSpeed]
+  const rollData = [
+    photo.camera,
+    photo.film,
+    photo.aperture,
+    photo.shutterSpeed,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -58,8 +63,7 @@ export function PhotoOverlay({
       <button
         type="button"
         className="photo-overlay__nav photo-overlay__nav--prev"
-        onClick={() => onNavigate(index - 1)}
-        disabled={!hasPrev}
+        onClick={() => onNavigate(prevIndex)}
         aria-label="Foto anterior"
       >
         ‹
@@ -67,8 +71,7 @@ export function PhotoOverlay({
       <button
         type="button"
         className="photo-overlay__nav photo-overlay__nav--next"
-        onClick={() => onNavigate(index + 1)}
-        disabled={!hasNext}
+        onClick={() => onNavigate(nextIndex)}
         aria-label="Foto siguiente"
       >
         ›
@@ -93,8 +96,14 @@ export function PhotoOverlay({
       </div>
 
       <div className="photo-overlay__caption">
+        {photo.tags.length > 0 && (
+          <p className="photo-overlay__tags">{photo.tags.join(" · ")}</p>
+        )}
         {photo.caption && (
           <h2 className="photo-overlay__title">{photo.caption}</h2>
+        )}
+        {photo.description && (
+          <p className="photo-overlay__description">{photo.description}</p>
         )}
         {rollData && <p className="photo-overlay__data">{rollData}</p>}
       </div>

@@ -14,6 +14,7 @@ import { getVariant, type Photo } from "../lib/types";
 
 const EMPTY_METADATA: PhotoMetadata = {
   caption: "",
+  description: "",
   camera: "",
   film: "",
   aperture: "",
@@ -24,6 +25,7 @@ const EMPTY_METADATA: PhotoMetadata = {
 function metadataFromPhoto(photo: Photo): PhotoMetadata {
   return {
     caption: photo.caption ?? "",
+    description: photo.description ?? "",
     camera: photo.camera ?? "",
     film: photo.film ?? "",
     aperture: photo.aperture ?? "",
@@ -196,6 +198,9 @@ export function Admin() {
                 <div className="admin-card__body">
                   <p className="admin-card__caption">
                     {photo.caption || "Sin pie de foto"}
+                  </p>
+                  <p className="photo-overlay__data">
+                    {photo.description || "Sin descripción"}
                   </p>
                   {rollData && <p className="photo-overlay__data">{rollData}</p>}
                   <div className="admin-card__actions">

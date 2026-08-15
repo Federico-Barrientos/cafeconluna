@@ -2,7 +2,7 @@ import { getVariant, type Photo } from "../lib/types";
 
 interface MasonryProps {
   photos: Photo[];
-  onSelect: (index: number) => void;
+  onSelect: (index: number, trigger: HTMLButtonElement) => void;
 }
 
 export function Masonry({ photos, onSelect }: MasonryProps) {
@@ -20,7 +20,7 @@ export function Masonry({ photos, onSelect }: MasonryProps) {
             key={photo.id}
             type="button"
             className="masonry__item"
-            onClick={() => onSelect(index)}
+            onClick={(event) => onSelect(index, event.currentTarget)}
             aria-label={`Ver detalle: ${photo.caption ?? "foto"}`}
           >
             <span
@@ -36,8 +36,17 @@ export function Masonry({ photos, onSelect }: MasonryProps) {
                 loading="lazy"
               />
             </span>
-            {photo.caption && (
-              <span className="masonry__caption">{photo.caption}</span>
+            {(photo.tags.length > 0 || photo.caption) && (
+              <span className="masonry__meta">
+                {photo.tags.map((tag) => (
+                  <span key={tag} className="masonry__tag">
+                    {tag}
+                  </span>
+                ))}
+                {photo.caption && (
+                  <span className="masonry__caption">{photo.caption}</span>
+                )}
+              </span>
             )}
           </button>
         );

@@ -52,6 +52,7 @@ function buildVariants(spec: MockSpec): Photo["variants"] {
 export const mockPhotos: Photo[] = SPECS.map((spec) => ({
   id: spec.id,
   caption: spec.caption,
+  description: null,
   camera: spec.camera,
   film: spec.film,
   aperture: spec.aperture,

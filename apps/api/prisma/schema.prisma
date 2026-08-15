@@ -33,6 +33,7 @@ model Session {
 model Photo {
   id           String         @id @default(cuid())
   caption      String?
+  description  String?
   camera       String?
   film         String?
   aperture     String?

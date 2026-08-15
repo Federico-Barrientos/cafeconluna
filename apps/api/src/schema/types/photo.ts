@@ -31,6 +31,7 @@ PhotoRef.implement({
   fields: (t) => ({
     id: t.exposeID("id"),
     caption: t.exposeString("caption", { nullable: true }),
+    description: t.exposeString("description", { nullable: true }),
     camera: t.exposeString("camera", { nullable: true }),
     film: t.exposeString("film", { nullable: true }),
     aperture: t.exposeString("aperture", { nullable: true }),

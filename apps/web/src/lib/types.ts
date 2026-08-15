@@ -10,6 +10,7 @@ export interface PhotoVariant {
 export interface Photo {
   id: string;
   caption: string | null;
+  description: string | null;
   camera: string | null;
   film: string | null;
   aperture: string | null;

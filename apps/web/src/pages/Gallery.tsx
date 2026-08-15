@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Masonry } from "../components/Masonry";
 import { PhotoOverlay } from "../components/PhotoOverlay";
 import { fetchPhotos } from "../lib/api";
@@ -9,6 +9,17 @@ export function Gallery() {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  function handleSelect(index: number, trigger: HTMLButtonElement) {
+    triggerRef.current = trigger;
+    setSelectedIndex(index);
+  }
+
+  function handleClose() {
+    setSelectedIndex(null);
+    triggerRef.current?.focus();
+  }
 
   useEffect(() => {
     fetchPhotos(activeTag).then((result) => {
@@ -31,6 +42,7 @@ export function Gallery() {
             type="button"
             className={`tag-chip${activeTag === null ? " tag-chip--active" : ""}`}
             onClick={() => setActiveTag(null)}
+            aria-pressed={activeTag === null}
           >
             Todas
           </button>
@@ -40,6 +52,7 @@ export function Gallery() {
               type="button"
               className={`tag-chip${activeTag === tag ? " tag-chip--active" : ""}`}
               onClick={() => setActiveTag(tag)}
+              aria-pressed={activeTag === tag}
             >
               {tag}
             </button>
@@ -47,13 +60,13 @@ export function Gallery() {
         </div>
       )}
 
-      <Masonry photos={photos} onSelect={setSelectedIndex} />
+      <Masonry photos={photos} onSelect={handleSelect} />
 
       {selectedIndex !== null && (
         <PhotoOverlay
           photos={photos}
           index={selectedIndex}
-          onClose={() => setSelectedIndex(null)}
+          onClose={handleClose}
           onNavigate={setSelectedIndex}
         />
       )}

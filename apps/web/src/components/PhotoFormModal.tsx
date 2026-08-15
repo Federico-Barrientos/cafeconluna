@@ -75,6 +75,18 @@ export function PhotoFormModal({
         </div>
 
         <div className="field">
+          <label htmlFor="description">Descripción</label>
+          <textarea
+            id="description"
+            rows={4}
+            value={metadata.description}
+            onChange={(e) =>
+              setMetadata((prev) => ({ ...prev, description: e.target.value }))
+            }
+          />
+        </div>
+
+        <div className="field">
           <label htmlFor="camera">Cámara</label>
           <input
             id="camera"
