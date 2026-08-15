@@ -41,6 +41,10 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@cafeconluna.com}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      # Bind mounts en Windows/Docker Desktop no propagan eventos de archivo
+      # de forma confiable; sin polling, tsx watch sirve código stale.
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "300"
     ports:
       - "4000:4000"
     volumes:
